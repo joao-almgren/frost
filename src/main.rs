@@ -18,15 +18,6 @@ struct Vertex
 	_col: [f32; 4],
 }
 
-fn vertex(pos: [i8; 3], col: [i8; 3]) -> Vertex
-{
-	Vertex
-	{
-		_pos: [pos[0] as f32, pos[1] as f32, pos[2] as f32, 1.0],
-		_col: [col[0] as f32, col[1] as f32, col[2] as f32, 1.0],
-	}
-}
-
 fn create_depth_texture(config: &wgpu::SurfaceConfiguration, device: &wgpu::Device,) -> wgpu::TextureView
 {
 	let depth_texture = device.create_texture(&wgpu::TextureDescriptor
