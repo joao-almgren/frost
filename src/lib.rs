@@ -92,6 +92,7 @@ impl RenderState
 			}),
 			primitive: wgpu::PrimitiveState
 			{
+				topology: wgpu::PrimitiveTopology::TriangleList,
 				front_face: wgpu::FrontFace::Ccw,
 				cull_mode: Some(wgpu::Face::Back),
 				..Default::default()
@@ -155,7 +156,7 @@ impl RenderState
 
 		// render pass
 		{
-			let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor
+			let mut renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor
 			{
 				label: None,
 				color_attachments: &[Some(wgpu::RenderPassColorAttachment
@@ -180,8 +181,8 @@ impl RenderState
 				}),
 			});
 
-			rpass.set_pipeline(&self.render_pipeline);
-			rpass.draw(0..3, 0..1);
+			renderpass.set_pipeline(&self.render_pipeline);
+			renderpass.draw(0..3, 0..1);
 		}
 
 		self.queue.submit(Some(encoder.finish()));
@@ -189,81 +190,6 @@ impl RenderState
 
 		Ok(())
 	}
-}
-
-pub fn run()
-{
-	env_logger::init();
-
-	let event_loop = EventLoop::new();
-	let window = WindowBuilder::new()
-		.with_title("frost")
-		.build(&event_loop)
-		.unwrap();
-
-	pollster::block_on(main_loop(event_loop, window));
-}
-
-async fn main_loop(event_loop: EventLoop<()>, window: Window)
-{
-	let mut state = RenderState::new(window).await;
-
-
-	event_loop.run(move | event, _, control_flow |
-	{
-		//let _ = (&instance, &adapter, &shader, &pipeline_layout, &config, &depth_view);
-
-		control_flow.set_poll();
-		//control_flow.set_wait();
-
-		match event
-		{
-			Event::WindowEvent { ref event, window_id } if window_id == state.window().id() && !state.input(event) => match event
-			{
-				WindowEvent::CloseRequested =>
-				{
-					control_flow.set_exit();
-				},
-				WindowEvent::KeyboardInput { input, .. } =>
-				{
-					if let Some(keycode) = input.virtual_keycode
-					{
-						if keycode == winit::event::VirtualKeyCode::Escape
-						{
-							control_flow.set_exit();
-						}
-					}
-				},
-				WindowEvent::Resized(size) =>
-				{
-					state.resize(*size);
-					state.window.request_redraw();
-				},
-				WindowEvent::ScaleFactorChanged { new_inner_size, .. } =>
-				{
-					state.resize(**new_inner_size);
-					state.window.request_redraw();
-				},
-				_ => {}
-			},
-			Event::MainEventsCleared =>
-			{
-				state.window.request_redraw();
-			},
-			Event::RedrawRequested(_) =>
-			{
-				state.update();
-				match state.render()
-				{
-					Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-					Err(wgpu::SurfaceError::OutOfMemory) => control_flow.set_exit(),
-					Err(e) => eprintln!("{:?}", e),
-					Ok(_) => {}
-				}
-			},
-            _ => {}
-        }
-	});
 }
 
 fn create_depth_texture(config: &wgpu::SurfaceConfiguration, device: &wgpu::Device,) -> wgpu::TextureView
@@ -286,4 +212,75 @@ fn create_depth_texture(config: &wgpu::SurfaceConfiguration, device: &wgpu::Devi
 	});
 
 	depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
+}
+
+pub fn run()
+{
+	env_logger::init();
+
+	let event_loop = EventLoop::new();
+	let window = WindowBuilder::new()
+		.with_title("frost")
+		.build(&event_loop)
+		.unwrap();
+
+	pollster::block_on(main_loop(event_loop, window));
+}
+
+async fn main_loop(event_loop: EventLoop<()>, window: Window)
+{
+	let mut state = RenderState::new(window).await;
+
+	event_loop.run(move | event, _, control_flow |
+	{
+		control_flow.set_poll();
+
+		match event
+		{
+			Event::WindowEvent { ref event, window_id } if window_id == state.window().id() && !state.input(event) => match event
+			{
+				WindowEvent::CloseRequested =>
+				{
+					control_flow.set_exit();
+				},
+				WindowEvent::KeyboardInput { input, .. } =>
+				{
+					if let Some(keycode) = input.virtual_keycode
+					{
+						if keycode == winit::event::VirtualKeyCode::Escape
+						{
+							control_flow.set_exit();
+						}
+					}
+				},
+				WindowEvent::Resized(size) =>
+				{
+					state.resize(*size);
+					state.window().request_redraw();
+				},
+				WindowEvent::ScaleFactorChanged { new_inner_size, .. } =>
+				{
+					state.resize(**new_inner_size);
+					state.window().request_redraw();
+				},
+				_ => {}
+			},
+			Event::MainEventsCleared =>
+			{
+				state.window().request_redraw();
+			},
+			Event::RedrawRequested(_) =>
+			{
+				state.update();
+				match state.render()
+				{
+					Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
+					Err(wgpu::SurfaceError::OutOfMemory) => control_flow.set_exit(),
+					Err(e) => eprintln!("{:?}", e),
+					Ok(_) => {}
+				}
+			},
+            _ => {}
+        }
+	});
 }
