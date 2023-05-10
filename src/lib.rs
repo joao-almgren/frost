@@ -3,7 +3,14 @@ use winit::
 	window::Window,
 	window::WindowBuilder,
 	event_loop::EventLoop,
-	event::{ Event, WindowEvent },
+	event::
+	{
+		Event,
+		WindowEvent,
+		KeyboardInput,
+		ElementState,
+		VirtualKeyCode
+	},
 };
 
 struct RenderState
@@ -15,7 +22,7 @@ struct RenderState
 	queue: wgpu::Queue,
 	config: wgpu::SurfaceConfiguration,
 	depth_view: wgpu::TextureView,
-	render_pipeline: wgpu::RenderPipeline
+	render_pipeline: wgpu::RenderPipeline,
 }
 
 impl RenderState
@@ -118,7 +125,7 @@ impl RenderState
 			queue,
 			config,
 			depth_view,
-			render_pipeline
+			render_pipeline,
 		}
 	}
 
@@ -237,33 +244,30 @@ async fn main_loop(event_loop: EventLoop<()>, window: Window)
 
 		match event
 		{
-			Event::WindowEvent { ref event, window_id } if window_id == state.window().id() && !state.input(event) => match event
+			Event::WindowEvent { ref event, window_id } if window_id == state.window().id() => if !state.input(event)
 			{
-				WindowEvent::CloseRequested =>
+				match event
 				{
-					control_flow.set_exit();
-				},
-				WindowEvent::KeyboardInput { input, .. } =>
-				{
-					if let Some(keycode) = input.virtual_keycode
+					WindowEvent::CloseRequested =>
 					{
-						if keycode == winit::event::VirtualKeyCode::Escape
-						{
-							control_flow.set_exit();
-						}
-					}
-				},
-				WindowEvent::Resized(size) =>
-				{
-					state.resize(*size);
-					state.window().request_redraw();
-				},
-				WindowEvent::ScaleFactorChanged { new_inner_size, .. } =>
-				{
-					state.resize(**new_inner_size);
-					state.window().request_redraw();
-				},
-				_ => {}
+						control_flow.set_exit();
+					},
+					WindowEvent::KeyboardInput { input: KeyboardInput { state: ElementState::Pressed, virtual_keycode: Some(VirtualKeyCode::Escape), .. }, .. } =>
+					{
+						control_flow.set_exit();
+					},
+					WindowEvent::Resized(size) =>
+					{
+						state.resize(*size);
+						state.window().request_redraw();
+					},
+					WindowEvent::ScaleFactorChanged { new_inner_size, .. } =>
+					{
+						state.resize(**new_inner_size);
+						state.window().request_redraw();
+					},
+					_ => {}
+				}
 			},
 			Event::MainEventsCleared =>
 			{

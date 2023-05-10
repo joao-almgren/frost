@@ -3,13 +3,15 @@ use std::fs::File;
 use std::io::{ BufReader, BufRead };
 use std::num::IntErrorKind;
 use std::collections::HashMap;
+use bytemuck::{ Pod, Zeroable };
 
-#[derive(Debug)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Element
 {
-	pub vertex: (f32, f32, f32),
-	pub normal: (f32, f32, f32),
-	pub color: (f32, f32, f32)
+	pub vertex: [f32; 3],
+	pub normal: [f32; 3],
+	pub color: [f32; 3],
 }
 
 struct Face
@@ -23,7 +25,7 @@ struct Face
 // https://en.wikipedia.org/wiki/Wavefront_.obj_file
 pub fn load_wfo(fname: &str) -> Result<Vec<Element>, Box<dyn std::error::Error>>
 {
-	let mut colors: HashMap<String, (f32, f32, f32)> = HashMap::new();
+	let mut colors: HashMap<String, [f32; 3]> = HashMap::new();
 	let mut material: String = "".to_string();
 
 	let file = File::open(format!("{}.mtl", fname))?;
@@ -36,7 +38,7 @@ pub fn load_wfo(fname: &str) -> Result<Vec<Element>, Box<dyn std::error::Error>>
 		if line.len() > 6 && line[0..6] == *"newmtl"
 		{
 			material = line[7..].to_string();
-			colors.insert(material.clone(), (0.0, 0.0, 0.0));
+			colors.insert(material.clone(), [0.0, 0.0, 0.0]);
 		}
 		else if line.len() > 2 && line[0..2] == *"Kd"
 		{
@@ -48,18 +50,18 @@ pub fn load_wfo(fname: &str) -> Result<Vec<Element>, Box<dyn std::error::Error>>
 			unsafe
 			{
 				*colors.get_mut(&material).unwrap() =
-				(
+				[
 					str::from_utf8_unchecked(&line[index0.0..index0.1]).parse()?,
 					str::from_utf8_unchecked(&line[index1.0..index1.1]).parse()?,
 					str::from_utf8_unchecked(&line[index2.0..index2.1]).parse()?
-				);
+				];
 			}
 		}
 	}
 
 	let mut elements: Vec<Element> = Vec::new();
-	let mut vertices: Vec<(f32, f32, f32)> = Vec::new();
-	let mut normals: Vec<(f32, f32, f32)> = Vec::new();
+	let mut vertices: Vec<[f32; 3]> = Vec::new();
+	let mut normals: Vec<[f32; 3]> = Vec::new();
 	let mut material: String = "".to_string();
 
 	let file = File::open(format!("{}.obj", fname))?;
@@ -84,11 +86,11 @@ pub fn load_wfo(fname: &str) -> Result<Vec<Element>, Box<dyn std::error::Error>>
 			unsafe
 			{
 				vertices.push(
-				(
+				[
 					-str::from_utf8_unchecked(&line[index0.0..index0.1]).parse()?,
 					str::from_utf8_unchecked(&line[index1.0..index1.1]).parse()?,
 					str::from_utf8_unchecked(&line[index2.0..index2.1]).parse()?
-				));
+				]);
 			}
 		}
 		else if line[0..2] == *"vn"
@@ -101,11 +103,11 @@ pub fn load_wfo(fname: &str) -> Result<Vec<Element>, Box<dyn std::error::Error>>
 			unsafe
 			{
 				normals.push(
-				(
+				[
 					-str::from_utf8_unchecked(&line[index0.0..index0.1]).parse()?,
 					str::from_utf8_unchecked(&line[index1.0..index1.1]).parse()?,
 					str::from_utf8_unchecked(&line[index2.0..index2.1]).parse()?
-				));
+				]);
 			}
 		}
 		else if line.len() > 6 && line[0..6] == *"usemtl"

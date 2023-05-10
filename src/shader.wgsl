@@ -1,7 +1,7 @@
 struct VOutput
 {
-	@location(0) v_color: vec4<f32>,
 	@builtin(position) position: vec4<f32>,
+	@location(0) color: vec4<f32>,
 };
 
 @vertex
@@ -24,7 +24,7 @@ fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VOutput
 	var out: VOutput;
 
 	out.position = vec4<f32>(pos[in_vertex_index], 0.0, 1.0);
-	out.v_color = vec4<f32>(color[in_vertex_index], 1.0);
+	out.color = vec4<f32>(color[in_vertex_index], 1.0);
 
 	return out;
 }
@@ -32,5 +32,5 @@ fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VOutput
 @fragment
 fn fs_main(in: VOutput) -> @location(0) vec4<f32>
 {
-	return in.v_color;
+	return in.color;
 }
