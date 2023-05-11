@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 use std::str;
 use std::fs::File;
 use std::io::{ BufReader, BufRead };
@@ -9,7 +11,7 @@ use bytemuck::{ Pod, Zeroable };
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Element
 {
-	pub vertex: [f32; 3],
+	pub position: [f32; 3],
 	pub normal: [f32; 3],
 	pub color: [f32; 3],
 }
@@ -179,9 +181,9 @@ pub fn load_wfo(fname: &str) -> Result<Vec<Element>, Box<dyn std::error::Error>>
 				let mut start: usize = 1;
 				while start + 1 < faces.len()
 				{
-					elements.push(Element{ vertex: vertices[faces[0].v], normal: normals[faces[0].vn], color: colors[&faces[0].m] });
-					elements.push(Element{ vertex: vertices[faces[start + 1].v], normal: normals[faces[start + 1].vn], color: colors[&faces[start + 1].m] });
-					elements.push(Element{ vertex: vertices[faces[start].v], normal: normals[faces[start].vn], color: colors[&faces[start].m] });
+					elements.push(Element{ position: vertices[faces[0].v], normal: normals[faces[0].vn], color: colors[&faces[0].m] });
+					elements.push(Element{ position: vertices[faces[start + 1].v], normal: normals[faces[start + 1].vn], color: colors[&faces[start + 1].m] });
+					elements.push(Element{ position: vertices[faces[start].v], normal: normals[faces[start].vn], color: colors[&faces[start].m] });
 
 					start += 1;
 				}

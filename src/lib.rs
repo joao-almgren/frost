@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 use winit::
 {
 	window::Window,
@@ -12,6 +14,25 @@ use winit::
 		VirtualKeyCode
 	},
 };
+use wgpu::util::DeviceExt;
+mod wfo;
+
+impl wfo::Element
+{
+	const ATTRIBS: [wgpu::VertexAttribute; 3] = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x3];
+
+	fn desc<'a>() -> wgpu::VertexBufferLayout<'a>
+	{
+		use std::mem;
+
+		wgpu::VertexBufferLayout
+		{
+			array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+			step_mode: wgpu::VertexStepMode::Vertex,
+			attributes: &Self::ATTRIBS,
+		}
+	}
+}
 
 struct RenderState
 {
@@ -23,6 +44,8 @@ struct RenderState
 	config: wgpu::SurfaceConfiguration,
 	depth_view: wgpu::TextureView,
 	render_pipeline: wgpu::RenderPipeline,
+	vertex_buffer: wgpu::Buffer,
+	num_vertices: u32,
 }
 
 impl RenderState
@@ -89,7 +112,7 @@ impl RenderState
 			{
 				module: &shader,
 				entry_point: "vs_main",
-				buffers: &[],
+				buffers: &[wfo::Element::desc(),]
 			},
 			fragment: Some(wgpu::FragmentState
 			{
@@ -116,6 +139,17 @@ impl RenderState
 			multiview: None,
 		});
 
+		let ferris = wfo::load_wfo("rustacean-3d").unwrap();
+
+		let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor
+		{
+			label: Some("ferris"),
+			contents: bytemuck::cast_slice(&ferris),
+			usage: wgpu::BufferUsages::VERTEX,
+		});
+
+		let num_vertices = ferris.len() as u32;
+
 		Self
 		{
 			window,
@@ -126,6 +160,8 @@ impl RenderState
 			config,
 			depth_view,
 			render_pipeline,
+			vertex_buffer,
+			num_vertices
 		}
 	}
 
@@ -189,7 +225,8 @@ impl RenderState
 			});
 
 			renderpass.set_pipeline(&self.render_pipeline);
-			renderpass.draw(0..3, 0..1);
+			renderpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+			renderpass.draw(0..self.num_vertices, 0..1);
 		}
 
 		self.queue.submit(Some(encoder.finish()));
@@ -228,6 +265,7 @@ pub fn run()
 	let event_loop = EventLoop::new();
 	let window = WindowBuilder::new()
 		.with_title("frost")
+		.with_inner_size(winit::dpi::PhysicalSize { width: 256, height: 256 })
 		.build(&event_loop)
 		.unwrap();
 
