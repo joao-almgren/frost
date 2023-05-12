@@ -19,8 +19,8 @@ fn vs_main(in: VInput) -> VOutput
 
 	out.position = vec4<f32>(in.position, 1.0);
 
-	out.position.x = (out.position.x / out.position.z) / 256.0 + 0.5;
-	out.position.y = (out.position.y / out.position.z) / 256.0 + 0.5;
+	out.position.x = (out.position.x / (out.position.z - 5.0)) / 256.0 + 0.5;
+	out.position.y = (out.position.y / (out.position.z - 5.0)) / 256.0 + 0.5;
 	out.position.w = 1.0 / out.position.z;
 	out.position.z = 1.0;
 
